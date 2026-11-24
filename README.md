@@ -40,11 +40,21 @@ npm run dev        # http://localhost:5173
 
 In the sidebar, choose a model and add its API key. Add a SerpAPI key only if the sidebar marks it *Required*. Keys are kept in memory unless you tick "Remember keys on this device".
 
-API calls go through the Vite dev/preview server proxy (`vite.config.js`), because SerpAPI and some LLM APIs block direct browser requests. For a production-like run, use `npm run build && npm run preview`. The proxy forwards your keys to the provider and stores nothing.
+API calls go through a small proxy because SerpAPI and some LLM APIs block direct browser requests. Locally, the Vite dev/preview server handles this (`vite.config.js`).
+
+## Deploy on Vercel
+
+On Vercel, the serverless function `api/proxy.js` takes over from the Vite proxy. `vercel.json` routes `/api/<provider>/<path>` to it.
+
+1. Import the repo in Vercel. The Vite framework, build command and `dist` output are set in `vercel.json`.
+2. Deploy. No environment variables are needed, because users enter their own keys in the UI.
+
+The function only forwards to the exact endpoints the app uses (Anthropic Messages, OpenAI/xAI Chat Completions and Responses, Gemini `generateContent`, SerpAPI search), so it can't be used as an open proxy. Keys pass through and are never stored or logged. `maxDuration` is set to 300s because web-search research can take a minute or two.
 
 ## Layout
 
 ```
+api/proxy.js           Vercel serverless proxy (production)
 src/
   agents/research.js   Research Agent (SerpAPI + LLM → 10 ideas)
   agents/linkedin.js   LinkedIn Agent (audience prompt, CTA handling)
